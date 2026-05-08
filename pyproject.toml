@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ivan-core"
-version = "0.1.0"
+version = "0.3.0"
 description = "Internal utilities for Iván's projects (HR sourcing, licitaciones, automations)"
 authors = ["Iván"]
 readme = "README.md"
@@ -10,12 +10,15 @@ packages = [{include = "ivan_core"}]
 python = "^3.11"
 httpx = "^0.27.0"
 supabase = "^2.5.0"
-anthropic = "^0.34.0"
 pydantic = "^2.7.0"
 pydantic-settings = "^2.3.0"
 tenacity = "^8.3.0"          # retry con backoff
 selectolax = "^0.3.21"       # parser HTML rápido
 python-dotenv = "^1.0.1"
+# Providers LLM (todos opcionales en runtime: import lazy en cada cliente)
+google-genai = "^1.0.0"      # Gemini (default)
+anthropic = "^0.34.0"        # Claude
+openai = "^1.40.0"           # OpenAI / OpenRouter
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"

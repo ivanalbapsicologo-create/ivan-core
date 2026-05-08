@@ -19,29 +19,47 @@ class Settings(BaseSettings):
     # Supabase (cada proyecto su propio project)
     supabase_url: str = Field(..., description="URL del proyecto Supabase")
     supabase_key: str = Field(..., description="Anon key (frontend + backend público)")
-    supabase_service_role_key: str | None = None  # solo backend, nunca frontend
+    supabase_service_role_key: str | None = None
 
-    # Serper.dev (compartido entre proyectos)
+    # Serper.dev
     serper_api_key: str = Field(..., description="API key de serper.dev")
     serper_base_url: str = "https://google.serper.dev"
 
-    # Anthropic (compartido)
-    anthropic_api_key: str = Field(..., description="API key de Anthropic")
+    # ---------------- LLM ----------------
+    # Provider activo: google | anthropic | openai | openrouter
+    llm_provider: Literal["google", "anthropic", "openai", "openrouter"] = "google"
+
+    # Google Gemini (free tier de Google AI Studio)
+    google_api_key: str | None = None
+    gemini_model_default: str = "gemini-2.5-flash"
+
+    # Anthropic
+    anthropic_api_key: str | None = None
     claude_model_default: str = "claude-haiku-4-5-20251001"
     claude_model_normalize: str = "claude-haiku-4-5-20251001"
     claude_model_scoring: str = "claude-haiku-4-5-20251001"
 
+    # OpenAI directo
+    openai_api_key: str | None = None
+    openai_base_url: str | None = None  # None = api.openai.com por defecto
+    openai_model_default: str = "gpt-4o-mini"
+
+    # OpenRouter (compatible OpenAI)
+    openrouter_api_key: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model_default: str = "google/gemini-2.5-flash"
+
     # Rate limits y timeouts
     http_timeout: int = 30
-    http_rate_limit_per_sec: float = 0.5  # 1 req cada 2s (PoliteHTTPClient)
+    http_rate_limit_per_sec: float = 0.5
 
-    # Cap Serper por búsqueda (presupuesto duro para no agotar quota)
+    # Cap Serper por búsqueda
     serper_max_per_search: int = 30
-    serper_default_num: int = 20  # resultados por query
+    serper_default_num: int = 20
 
-    # GitHub Actions dispatch (para Vercel Function api/search.py)
-    github_repo: str | None = None  # "owner/repo"
-    github_dispatch_token: str | None = None  # PAT con permiso workflow
+    # GitHub Actions dispatch (Vercel Functions → workflow)
+    github_repo: str | None = None
+    github_dispatch_token: str | None = None
 
     # RGPD
     default_retention_days: int = 30
@@ -51,5 +69,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Singleton de Settings. Cacheado para evitar reparseo."""
     return Settings()  # type: ignore[call-arg]
