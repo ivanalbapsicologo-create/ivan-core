@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,10 +16,29 @@ class Settings(BaseSettings):
     environment: Literal["dev", "prod", "test"] = "dev"
     log_level: str = "INFO"
 
-    # Supabase (cada proyecto su propio project)
-    supabase_url: str = Field(..., description="URL del proyecto Supabase")
-    supabase_key: str = Field(..., description="Anon key (frontend + backend público)")
-    supabase_service_role_key: str | None = None
+    # Supabase. Aceptamos varios alias porque la integración Supabase-Vercel
+    # genera nombres ligeramente distintos (SUPABASE_ANON_KEY vs SUPABASE_KEY).
+    supabase_url: str = Field(
+        ...,
+        validation_alias=AliasChoices("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"),
+        description="URL del proyecto Supabase",
+    )
+    supabase_key: str = Field(
+        ...,
+        validation_alias=AliasChoices(
+            "SUPABASE_KEY",
+            "SUPABASE_ANON_KEY",
+            "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        ),
+        description="Anon key (frontend + backend público)",
+    )
+    supabase_service_role_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SUPABASE_SERVICE_ROLE_KEY",
+            "SUPABASE_SERVICE_KEY",
+        ),
+    )
 
     # Serper.dev
     serper_api_key: str = Field(..., description="API key de serper.dev")
