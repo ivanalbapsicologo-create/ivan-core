@@ -45,7 +45,7 @@ class OpenAICompatClient(BaseLLMClient):
         *,
         system: str | None = None,
         model: str | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
         temperature: float = 0.0,
     ) -> str:
         messages: list[dict[str, str]] = []
@@ -67,7 +67,7 @@ class OpenAICompatClient(BaseLLMClient):
         *,
         system: str | None = None,
         model: str | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> dict[str, Any] | list[Any]:
         """Pide JSON usando `response_format={"type": "json_object"}` cuando aplica."""
         messages: list[dict[str, str]] = []

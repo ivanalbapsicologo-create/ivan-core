@@ -16,7 +16,7 @@ class BaseLLMClient(ABC):
         *,
         system: str | None = None,
         model: str | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
         temperature: float = 0.0,
     ) -> str:
         """Devuelve la respuesta como texto plano."""
@@ -27,7 +27,7 @@ class BaseLLMClient(ABC):
         *,
         system: str | None = None,
         model: str | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> dict[str, Any] | list[Any]:
         """Devuelve la respuesta parseada como JSON. Limpia code fences si existen."""
         text = await self.complete(

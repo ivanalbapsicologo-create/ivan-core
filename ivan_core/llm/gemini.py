@@ -41,7 +41,7 @@ class GeminiClient(BaseLLMClient):
         *,
         system: str | None = None,
         model: str | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
         temperature: float = 0.0,
     ) -> str:
         return await asyncio.to_thread(
@@ -60,7 +60,7 @@ class GeminiClient(BaseLLMClient):
         *,
         system: str | None = None,
         model: str | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> dict[str, Any] | list[Any]:
         text = await asyncio.to_thread(
             self._sync_complete,

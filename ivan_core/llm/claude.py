@@ -26,7 +26,7 @@ class ClaudeClient(BaseLLMClient):
         *,
         system: str | None = None,
         model: str | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
         temperature: float = 0.0,
     ) -> str:
         response = await self.client.messages.create(
