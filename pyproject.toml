@@ -9,7 +9,7 @@ packages = [{include = "ivan_core"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 httpx = "^0.27.0"
-supabase = "^2.5.0"
+supabase = "^2.10.0"  # 2.10+ ya exige realtime ^2.0 (websockets ≥13)
 pydantic = "^2.7.0"
 pydantic-settings = "^2.3.0"
 tenacity = "^8.3.0"          # retry con backoff
