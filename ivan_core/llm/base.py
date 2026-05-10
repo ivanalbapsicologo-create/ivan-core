@@ -2,8 +2,11 @@
 
 import asyncio
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class BaseLLMClient(ABC):
@@ -57,14 +60,12 @@ class BaseLLMClient(ABC):
 
 
 def parse_json_safe(text: str) -> dict[str, Any] | list[Any]:
-    """Parsea JSON limpiando code fences y reparando errores comunes del LLM.
+    """Parsea JSON tolerante a errores del LLM.
 
-    Estrategia:
-    1. Quita code fences markdown
-    2. json.loads directo
-    3. Si falla, json_repair (recupera trailing commas, comillas, etc.)
+    Nunca lanza excepción: si todo falla devuelve dict vacío. El caller decide
+    cómo manejar el fallo (default-fallback, warning, etc.).
     """
-    cleaned = text.strip()
+    cleaned = (text or "").strip()
     if cleaned.startswith("```"):
         lines = cleaned.split("\n")
         lines = lines[1:]
@@ -72,15 +73,65 @@ def parse_json_safe(text: str) -> dict[str, Any] | list[Any]:
             lines = lines[:-1]
         cleaned = "\n".join(lines)
 
+    if not cleaned:
+        return {}
+
+    # 1. Intento directo
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
+        pass
+
+    # 2. json-repair (maneja trailing commas, comillas mal, etc.)
+    try:
         from json_repair import repair_json
-        repaired = repair_json(cleaned, return_objects=True)
-        if repaired in ("", None):
-            raise
-        # repair_json devuelve dict/list/primitive directamente cuando return_objects=True
-        if isinstance(repaired, (dict, list)):
-            return repaired
-        # Último recurso: parsear el resultado como string JSON
-        return json.loads(repair_json(cleaned))
+        repaired = repair_json(cleaned)
+        if repaired:
+            return json.loads(repaired)
+    except Exception as e:
+        logger.warning("json_repair failed: %s", e)
+
+    # 3. Último recurso: extraer el primer objeto/array balanceado
+    extracted = _extract_first_balanced(cleaned)
+    if extracted:
+        try:
+            return json.loads(extracted)
+        except json.JSONDecodeError:
+            pass
+
+    logger.error(
+        "parse_json_safe: irrecoverable JSON. First 500 chars: %r",
+        cleaned[:500],
+    )
+    return {}
+
+
+def _extract_first_balanced(text: str) -> str | None:
+    """Extrae el primer { ... } o [ ... ] con paréntesis balanceados."""
+    for open_c, close_c in (("{", "}"), ("[", "]")):
+        start = text.find(open_c)
+        if start < 0:
+            continue
+        depth = 0
+        in_string = False
+        escape = False
+        for i in range(start, len(text)):
+            ch = text[i]
+            if escape:
+                escape = False
+                continue
+            if ch == "\\":
+                escape = True
+                continue
+            if ch == '"' and not escape:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == open_c:
+                depth += 1
+            elif ch == close_c:
+                depth -= 1
+                if depth == 0:
+                    return text[start : i + 1]
+    return None
