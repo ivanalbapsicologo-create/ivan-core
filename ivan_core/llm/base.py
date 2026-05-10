@@ -57,7 +57,13 @@ class BaseLLMClient(ABC):
 
 
 def parse_json_safe(text: str) -> dict[str, Any] | list[Any]:
-    """Parsea JSON limpiando code fences y posibles preámbulos."""
+    """Parsea JSON limpiando code fences y reparando errores comunes del LLM.
+
+    Estrategia:
+    1. Quita code fences markdown
+    2. json.loads directo
+    3. Si falla, json_repair (recupera trailing commas, comillas, etc.)
+    """
     cleaned = text.strip()
     if cleaned.startswith("```"):
         lines = cleaned.split("\n")
@@ -65,4 +71,16 @@ def parse_json_safe(text: str) -> dict[str, Any] | list[Any]:
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         cleaned = "\n".join(lines)
-    return json.loads(cleaned)
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        from json_repair import repair_json
+        repaired = repair_json(cleaned, return_objects=True)
+        if repaired in ("", None):
+            raise
+        # repair_json devuelve dict/list/primitive directamente cuando return_objects=True
+        if isinstance(repaired, (dict, list)):
+            return repaired
+        # Último recurso: parsear el resultado como string JSON
+        return json.loads(repair_json(cleaned))
