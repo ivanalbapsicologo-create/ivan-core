@@ -64,9 +64,13 @@ class Settings(BaseSettings):
     openai_model_default: str = "gpt-4o-mini"
 
     # OpenRouter (compatible OpenAI)
+    # Default: Llama 3.3 70B Instruct free tier. Free models de OpenRouter
+    # tienen ~200 RPD sin créditos, ~1000 RPD con $10+ de saldo.
+    # Alternativas gratuitas: deepseek/deepseek-chat:free,
+    # google/gemini-2.0-flash-exp:free, mistralai/mistral-small-3.1-24b-instruct:free
     openrouter_api_key: str | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_model_default: str = "google/gemini-2.5-flash"
+    openrouter_model_default: str = "meta-llama/llama-3.3-70b-instruct:free"
 
     # Rate limits y timeouts
     http_timeout: int = 30

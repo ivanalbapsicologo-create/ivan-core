@@ -69,19 +69,41 @@ class OpenAICompatClient(BaseLLMClient):
         model: str | None = None,
         max_tokens: int = 8192,
     ) -> dict[str, Any] | list[Any]:
-        """Pide JSON usando `response_format={"type": "json_object"}` cuando aplica."""
+        """Pide JSON usando `response_format={"type": "json_object"}`.
+
+        Algunos modelos accesibles vía OpenRouter (Llama, Mistral en ciertos
+        backends) no soportan `response_format`. Si la primera llamada falla
+        con un BadRequest relacionado con el formato, reintentamos sin él y
+        confiamos en el prompt para que devuelva JSON. `parse_json_safe`
+        limpia code fences y JSON malformado.
+        """
+        from openai import BadRequestError
+
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        response = await self.client.chat.completions.create(
-            model=model or self.default_model,
-            messages=messages,  # type: ignore[arg-type]
-            max_tokens=max_tokens,
-            temperature=0.0,
-            response_format={"type": "json_object"},
-        )
+        target_model = model or self.default_model
+        common_kwargs: dict[str, Any] = {
+            "model": target_model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": 0.0,
+        }
+
+        try:
+            response = await self.client.chat.completions.create(
+                **common_kwargs,
+                response_format={"type": "json_object"},
+            )
+        except BadRequestError as e:
+            msg = str(e).lower()
+            if "response_format" in msg or "json_object" in msg or "json mode" in msg:
+                response = await self.client.chat.completions.create(**common_kwargs)
+            else:
+                raise
+
         text = response.choices[0].message.content or ""
 
         from ivan_core.llm.base import parse_json_safe
