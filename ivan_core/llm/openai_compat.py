@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ivan_core.config import get_settings
-from ivan_core.llm.base import BaseLLMClient
+from ivan_core.llm.base import BaseLLMClient, account_llm_call
 
 
 class OpenAICompatClient(BaseLLMClient):
@@ -48,6 +48,7 @@ class OpenAICompatClient(BaseLLMClient):
         max_tokens: int = 8192,
         temperature: float = 0.0,
     ) -> str:
+        account_llm_call()
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -79,6 +80,7 @@ class OpenAICompatClient(BaseLLMClient):
         """
         from openai import BadRequestError
 
+        account_llm_call()
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})

@@ -16,11 +16,17 @@ def get_supabase_client(use_service_role: bool = False) -> Client:
             audit_log, retención automática). Nunca True en frontend.
     """
     settings = get_settings()
-    key = (
-        settings.supabase_service_role_key
-        if use_service_role and settings.supabase_service_role_key
-        else settings.supabase_key
-    )
+    if use_service_role:
+        # Falla ruidosamente: degradar a anon en silencio rompería audit_log,
+        # purga y crons (RLS los bloquearía) sin error visible.
+        if not settings.supabase_service_role_key:
+            raise RuntimeError(
+                "Se pidió cliente service_role pero SUPABASE_SERVICE_ROLE_KEY no está "
+                "configurada. Configúrala en el entorno del backend/jobs."
+            )
+        key = settings.supabase_service_role_key
+    else:
+        key = settings.supabase_key
     return create_client(settings.supabase_url, key)
 
 
@@ -38,7 +44,9 @@ def insert_with_audit(
     """
     from ivan_core.audit_log import audit_log
 
-    client = get_supabase_client()
+    # service_role: estas tablas tienen RLS y datos personales; el cliente anon
+    # no podría insertar.
+    client = get_supabase_client(use_service_role=True)
     result = client.table(table).insert(row).execute()
     inserted = result.data[0] if result.data else {}
 

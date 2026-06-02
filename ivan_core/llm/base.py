@@ -1,12 +1,50 @@
 """Interfaz común para todos los providers LLM."""
 
 import asyncio
+import contextvars
 import json
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+# ----------------------------------------------------------------------------
+# Tope de llamadas LLM por búsqueda (red de seguridad para la cuota free).
+# Se almacena en un contextvar: runner.set_llm_budget(N) lo fija al inicio de
+# una búsqueda y se comparte con las tareas hijas (scoring/normalize/etc.).
+# ----------------------------------------------------------------------------
+_llm_budget: contextvars.ContextVar[dict[str, int] | None] = contextvars.ContextVar(
+    "llm_budget", default=None
+)
+
+
+class LLMBudgetExceeded(RuntimeError):
+    """Se superó el tope de llamadas LLM permitido por búsqueda."""
+
+
+def set_llm_budget(max_calls: int | None) -> None:
+    """Fija el tope de llamadas LLM del contexto actual (None/<=0 lo desactiva)."""
+    _llm_budget.set({"count": 0, "max": max_calls} if max_calls and max_calls > 0 else None)
+
+
+def llm_calls_used() -> int:
+    b = _llm_budget.get()
+    return b["count"] if b else 0
+
+
+def account_llm_call() -> None:
+    """Cuenta una llamada LLM; lanza LLMBudgetExceeded si supera el tope.
+
+    Los callers (normalize/scoring/competitors) capturan excepciones y caen a un
+    fallback determinista, de modo que el tope degrada con elegancia."""
+    b = _llm_budget.get()
+    if b is None:
+        return
+    if b["count"] >= b["max"]:
+        raise LLMBudgetExceeded(f"LLM call budget exceeded ({b['max']} calls/search)")
+    b["count"] += 1
 
 
 class BaseLLMClient(ABC):

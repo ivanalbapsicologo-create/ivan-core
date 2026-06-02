@@ -10,7 +10,7 @@ from typing import Any
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ivan_core.config import get_settings
-from ivan_core.llm.base import BaseLLMClient
+from ivan_core.llm.base import BaseLLMClient, account_llm_call
 
 
 class GeminiClient(BaseLLMClient):
@@ -84,6 +84,7 @@ class GeminiClient(BaseLLMClient):
         temperature: float,
         json_mode: bool,
     ) -> str:
+        account_llm_call()
         types = self._genai.types
         config_kwargs: dict[str, Any] = {
             "max_output_tokens": max_tokens,
