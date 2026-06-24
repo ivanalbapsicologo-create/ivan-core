@@ -67,6 +67,10 @@ class SerperClient:
         """
         settings = get_settings()
         n = num if num is not None else settings.serper_default_num
+        # Las cuentas Serper free rechazan num>10 con 400 "Query pattern not allowed
+        # for free accounts". serper_default_num actúa como techo duro: 10 en free,
+        # súbelo (20+) al pasar a un plan de pago.
+        n = min(n, settings.serper_default_num)
         cache_key = (query, type, gl, hl, n)
 
         if cache_key in self._cache:
