@@ -54,6 +54,14 @@ class GeminiClient(BaseLLMClient):
             json_mode=False,
         )
 
+    @retry(
+        # Más paciente que complete(): es la llamada estructurada crítica (normalize,
+        # scoring) y los 503 "high demand" de Gemini free son transitorios. Sin esto,
+        # un único 503 tira la normalización y se pierden las notas del brief.
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=2, max=15),
+        reraise=True,
+    )
     async def complete_json(
         self,
         prompt: str,

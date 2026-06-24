@@ -62,6 +62,13 @@ class OpenAICompatClient(BaseLLMClient):
         )
         return response.choices[0].message.content or ""
 
+    @retry(
+        # Llamada estructurada crítica (normalize, scoring): reintenta los errores
+        # transitorios del proveedor (503/429) para no perder el brief en un fallo puntual.
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=2, max=15),
+        reraise=True,
+    )
     async def complete_json(
         self,
         prompt: str,
