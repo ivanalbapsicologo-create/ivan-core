@@ -131,6 +131,10 @@ class SerperClient:
         (query, type, gl, hl, num); los aciertos de caché no consumen presupuesto.
         """
         n = num if num is not None else self.default_num
+        # Las cuentas Serper free rechazan num>10 con 400 "Query pattern not allowed
+        # for free accounts". default_num actúa como techo duro: 10 en free, súbelo
+        # (20+) al pasar a un plan de pago.
+        n = min(n, self.default_num)
         cache_key: CacheKey = (query, type, gl, hl, n)
 
         cached = self._budget.cache.get(cache_key)
