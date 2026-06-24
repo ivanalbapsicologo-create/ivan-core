@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ivan-core"
-version = "0.4.0"
+version = "0.4.1"
 description = "Internal utilities for Iván's projects (HR sourcing, licitaciones, automations)"
 authors = ["Iván"]
 readme = "README.md"
