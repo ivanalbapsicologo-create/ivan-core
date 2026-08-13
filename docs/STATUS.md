@@ -1,11 +1,29 @@
 # STATUS — ivan-core
-_Actualizado: 2026-07-15_
+_Actualizado: 2026-08-13_
 
 ## Dónde estamos
 
-Librería estable en **v0.4.1**, en su repo Git propio (rama `main`). Superficie
-pública pequeña y cubierta por tests. Consumidor principal: `sourcing-mai` (path
-local `../ivan-core`). Se añaden módulos solo cuando son genéricos de verdad.
+Librería estable en **v0.4.1**, en su repo Git propio (rama `main`). Consumidor
+principal: `sourcing-mai` (path local `../ivan-core`). Se añaden módulos solo
+cuando son genéricos de verdad.
+
+**Tests**: la primera suite propia llegó el 2026-08-13 (12 tests: presupuesto
+LLM con fail-fast, `parse_json_safe`, caché de OpenCorporates). Antes de esa
+fecha este STATUS afirmaba "cubierta por tests" sin que existiera `tests/`
+(hallazgo A601 de la review AgentLint). La mayor parte de la superficie sigue
+sin cobertura directa — la cobertura indirecta vive en la suite de sourcing-mai.
+
+**Sesión 2026-08-13 (quick wins AgentLint)**:
+- A301: los decoradores tenacity de los 3 providers ya NO reintentan
+  `LLMBudgetExceeded` (presupuesto agotado fallaba tras ~29 s de backoff).
+- A402: `_is_cache_fresh` (OpenCorporates) ignora payloads con `error` — un
+  timeout/rate-limit ya no deja a la empresa sin reverificar 90 días.
+- A401/A501: `audit_log` devuelve `bool` (el caller sabe si se auditó) y el log
+  de fallo ya no vuelca la fila con datos personales.
+- Deuda anotada (review completa en `agentlint/reviews/ivan-core/report.md`):
+  el presupuesto cuenta intentos (no llamadas lógicas); `refresh_active_countries`
+  corre sin presupuesto; ~45 % de la librería es superficie huérfana (rgpd/,
+  http_client, insert_with_audit…) candidata a poda (hipótesis H-0001).
 
 ## Módulos disponibles (hechos)
 

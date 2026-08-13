@@ -22,6 +22,12 @@ TTL_DAYS = 90
 def _is_cache_fresh(cached: dict[str, Any] | None) -> bool:
     if not cached:
         return False
+    # Un payload con error (timeout, rate limit…) NO es un resultado: cachearlo
+    # como fresco dejaba a empresas reales marcadas verified=false durante 90
+    # días sin reintento posible (AgentLint A402). Los errores siempre se
+    # reintentan en la siguiente verificación.
+    if cached.get("error"):
+        return False
     checked_at = cached.get("checked_at")
     if not checked_at:
         return False

@@ -3,10 +3,10 @@
 from typing import Any
 
 from openai import AsyncOpenAI
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_not_exception_type, stop_after_attempt, wait_exponential
 
 from ivan_core.config import get_settings
-from ivan_core.llm.base import BaseLLMClient, account_llm_call
+from ivan_core.llm.base import BaseLLMClient, LLMBudgetExceeded, account_llm_call
 
 
 class OpenAICompatClient(BaseLLMClient):
@@ -37,6 +37,8 @@ class OpenAICompatClient(BaseLLMClient):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
+        # Presupuesto agotado = fallo definitivo, no transitorio (AgentLint A301).
+        retry=retry_if_not_exception_type(LLMBudgetExceeded),
         reraise=True,
     )
     async def complete(
@@ -67,6 +69,8 @@ class OpenAICompatClient(BaseLLMClient):
         # transitorios del proveedor (503/429) para no perder el brief en un fallo puntual.
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=2, max=15),
+        # Presupuesto agotado = fallo definitivo, no transitorio (AgentLint A301).
+        retry=retry_if_not_exception_type(LLMBudgetExceeded),
         reraise=True,
     )
     async def complete_json(

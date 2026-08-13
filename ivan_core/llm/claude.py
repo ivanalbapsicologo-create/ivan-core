@@ -3,10 +3,10 @@
 import logging
 
 from anthropic import AsyncAnthropic
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_not_exception_type, stop_after_attempt, wait_exponential
 
 from ivan_core.config import get_settings
-from ivan_core.llm.base import BaseLLMClient, account_llm_call
+from ivan_core.llm.base import BaseLLMClient, LLMBudgetExceeded, account_llm_call
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,9 @@ class ClaudeClient(BaseLLMClient):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
+        # Presupuesto agotado = fallo definitivo: reintentarlo solo quema backoff
+        # (~29 s por llamada tras el tope — AgentLint A301).
+        retry=retry_if_not_exception_type(LLMBudgetExceeded),
         reraise=True,
     )
     async def complete(
